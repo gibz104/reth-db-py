@@ -1,0 +1,17 @@
+[package]
+name = "reth-db-py"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "reth_db_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.19.0"
+tokio = { version = "1", features = ["full"] }
+reth-db = { git = "https://github.com/paradigmxyz/reth", package = "reth-db" }
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", package = "reth-primitives" }
+eyre = "0.6.8"
+tracing = "0.1.37"
