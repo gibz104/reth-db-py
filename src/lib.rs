@@ -1,14 +1,19 @@
+mod types;
+mod utils;
+
+use crate::types::{DbHandler, TableName};
 use pyo3::prelude::*;
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
-}
 
-/// A Python module implemented in Rust.
+/// The main module for the reth_db_py library.
+///
+/// This module exposes two classes, `DbHandler` and `TableName`, which provide
+/// an interface to a database.
 #[pymodule]
 fn reth_db_py(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+    /// Handles database operations.
+    m.add_class::<DbHandler>()?;
+    /// Represents the name of a table in the database.
+    m.add_class::<TableName>()?;
     Ok(())
 }
