@@ -1,11 +1,11 @@
 # <h1 align="center">reth-db-py</h1>
 
-**Bare-bones Python package allowing you to interact with the Reth DB via Python. Rust and Pyo3 are used behind the scenes.**
+**Bare-bones Python package allowing you to interact with the Reth DB via Python. Written with Rust and Pyo3.**
 
 **This python wrapper can access node data 2x-4x faster than local RPC calls.  Using this package, the most recent
 block hash can be retrieved in ~300μs on a local reth DB.**
 
-
+[![Test Suite](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml/badge.svg)](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml)
 
 # Installation
 This package has been published to PyPi and can be installed using pip:
