@@ -1,16 +1,20 @@
 [build-system]
 requires = ["maturin>=1.1,<2.0"]
-build-backend = "maturin"
+build-backend = "maturin.sdist"
 
 [project]
 name = "reth-db-py"
+version = "0.0.1"
+description = "Python wrapper around reth db. Written in Rust."
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/gibz104/reth-db-py"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
