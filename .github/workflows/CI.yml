@@ -83,14 +83,20 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
+          path: wheels
       - uses: actions/download-artifact@v3
         with:
           name: sdist
+          path: sdist
       - name: Prepare artifacts
-        run: cp sdist/* wheels/
+        run: |
+          ls -l
+          mkdir dist
+          cp wheels/* dist/
+          cp sdist/* dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: wheels
+          packages_dir: dist
