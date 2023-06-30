@@ -6,6 +6,8 @@
 block hash can be retrieved in ~300μs on a local reth DB.**
 
 [![Test Suite](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml/badge.svg)](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml)
+[![Py Versions](https://img.shields.io/badge/python-3.7_|_3.8_|_3.9_|_3.10-blue.svg)](https://www.python.org/downloads/)
+[![Test OS](https://img.shields.io/badge/tested_on-ubuntu_|_mac_os-blue.svg)](https://github.com/gibz104/google-sheets-writer/actions/workflows/tests.yaml)
 
 # Installation
 This package has been published to PyPi and can be installed using pip:
