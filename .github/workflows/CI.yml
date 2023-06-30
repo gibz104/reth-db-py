@@ -63,6 +63,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/gibz104/linux-aarch64:latest
+      credentials:
+        username: gibz104
+        password: ${{ secrets.GHCR_PAT }}
     strategy:
       matrix:
         python-version: [ '3.7', '3.8', '3.9', '3.10' ]
