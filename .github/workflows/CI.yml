@@ -59,33 +59,6 @@ jobs:
           name: wheels
           path: dist
 
-  linux-aarch64:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/gibz104/linux-aarch64:latest
-      credentials:
-        username: gibz104
-        password: ${{ secrets.GHCR_PAT }}
-    strategy:
-      matrix:
-        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: aarch64
-          args: --release --out dist --find-interpreter
-          sccache: 'true'
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: dist
-
   sdist:
     runs-on: ubuntu-latest
     steps:
@@ -105,7 +78,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ macos, linux-x86, linux-aarch64, sdist ]
+    needs: [ macos, linux-x86, sdist ]
     steps:
       - uses: actions/download-artifact@v3
         with:
