@@ -1,137 +1,83 @@
-use crate::types::TableName;
+use reth_db::open_db_read_only;
+use reth_primitives::ChainSpecBuilder;
+use reth_provider::{BlockReader, HeaderProvider, ProviderFactory, ReceiptProvider, TransactionsProvider};
 
-use pyo3::prelude::*;
-use pyo3::exceptions;
-use eyre::{Result, WrapErr, ErrReport};
 use std::path::Path;
-use reth_db::{
-    cursor::DbCursorRO,
-    database::Database,
-    table::Table,
-    transaction::DbTx,
-    mdbx::{Env, EnvKind, NoWriteMap},
-    tables::{CanonicalHeaders, Headers, Transactions, TxHashNumber},
-};
-use reth_primitives::{
-    BlockNumber,
-    TxNumber,
-    TxHash,
-    H256
-};
+use std::sync::Arc;
+use reth_db::DatabaseEnvRO;
 
-/// Function to create a read-only database from a given path.
-pub fn read_only_db(path: &Path) -> Result<Env<NoWriteMap>, ErrReport> {
-    Env::<NoWriteMap>::open(path, EnvKind::RO)
-        .with_context(|| format!("Could not open database at path: {}", path.display()))
+pub struct DatabaseHandler {
+    factory: ProviderFactory<DatabaseEnvRO>,
 }
 
-
-/// `DbTool` is a wrapper over a database (`DB`) that provides various database query functions.
-pub struct DbTool<'a, DB: Database> {
-    pub(crate) db: &'a DB,
-}
-
-impl<'a, DB: Database> DbTool<'a, DB> {
-    /// Constructs a `DbTool` from a given database (`DB`).
-    pub(crate) fn new(db: &'a DB) -> eyre::Result<Self> {
-        Ok(Self { db })
+impl DatabaseHandler {
+    pub fn new(db_path: String) -> eyre::Result<Self> {
+        let db = open_db_read_only(&Path::new(&db_path), None)?;
+        let spec = Arc::new(ChainSpecBuilder::mainnet().build());
+        let factory = ProviderFactory::new(db, spec.clone());
+        Ok(Self { factory })
     }
 
-    /// Grabs the contents of the table within a certain index range and places the
-    /// entries into a [`HashMap`][std::collections::HashMap].
-    pub fn list<T: Table>(
-        &self,
-        skip: usize,
-        len: usize,
-        reverse: bool,
-    ) -> Result<Vec<(T::Key, T::Value)>> {
-        let data = self.db.view(|tx| {
-            let mut cursor = tx.cursor_read::<T>().expect("Was not able to obtain a cursor.");
-
-            if reverse {
-                cursor.walk_back(None)?.skip(skip).take(len).collect::<Result<_, _>>()
-            } else {
-                cursor.walk(None)?.skip(skip).take(len).collect::<Result<_, _>>()
-            }
-        })?;
-
-        data.map_err(|e| eyre::eyre!(e))
+    pub(crate) fn get_header_by_block_number(&self, number: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let header = provider.header_by_number(number)?;
+        let json = serde_json::to_string(&header)?;
+        Ok(json)
     }
 
-    /// Grabs the content of the table for the given key
-    pub fn get<T: Table>(&self, key: T::Key) -> Result<Option<T::Value>> {
-        self.db.view(|tx| tx.get::<T>(key))?
-            .map_err(|e| eyre::eyre!(e))
+    pub(crate) fn get_headers_by_block_number_range(&self, start: u64, end: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let headers = provider.sealed_headers_range(&start..&end)?;
+        let json = serde_json::to_string(&headers)?;
+        Ok(json)
     }
 
-    /// Returns a list of entries in a specified database table. The list consists of tuples, where each tuple
-    /// represents an entry (key, value) in the database table. The list is controlled by `skip`, `len`, and `reverse` parameters.
-    pub fn list_from_str(
-        &self,
-        table_name: TableName,
-        skip: usize,
-        len: usize,
-        reverse: bool,
-    ) -> PyResult<Vec<(String, String)>> {
-        match table_name {
-            TableName::CanonicalHeaders => self.list::<CanonicalHeaders>(skip, len, reverse)
-                .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                .map(|vec| vec.into_iter()
-                    .map(|(key, value)| (format!("{:?}", key), format!("{:?}", value)))
-                    .collect()),
-            TableName::Headers => self.list::<Headers>(skip, len, reverse)
-                .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                .and_then(|vec| vec.into_iter()
-                    .map(|(key, value)| {
-                        serde_json::to_string(&value)
-                            .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                            .map(|v| (format!("{:?}", key), v))
-                    })
-                    .collect::<Result<Vec<_>, _>>()),
-            TableName::Transactions => self.list::<Transactions>(skip, len, reverse)
-                .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                .and_then(|vec| vec.into_iter()
-                    .map(|(key, value)| {
-                        serde_json::to_string(&value)
-                            .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                            .map(|v| (format!("{:?}", key), v))
-                    })
-                    .collect::<Result<Vec<_>, _>>()),
-            TableName::TxHashNumber => self.list::<TxHashNumber>(skip, len, reverse)
-                .map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-                .map(|vec| vec.into_iter()
-                    .map(|(key, value)| (format!("{:?}", key), format!("{:?}", value)))
-                    .collect()),
-        }
+    pub(crate) fn get_transaction_by_id(&self, id: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let transaction = provider.transaction_by_id(id)?;
+        let json = serde_json::to_string(&transaction)?;
+        Ok(json)
     }
 
-    /// Returns a value from a specified database table for a given key.
-    pub fn get_from_str(
-        &self,
-        table_name: TableName,
-        key: &str,
-    ) -> PyResult<String> {
-        match table_name {
-            TableName::CanonicalHeaders => {
-                let block_number = key.parse::<u64>().map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                let block_hash = self.get::<CanonicalHeaders>(BlockNumber::from(block_number)).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                serde_json::to_string(&block_hash).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-            },
-            TableName::Headers => {
-                let block_number = key.parse::<u64>().map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                let header = self.get::<Headers>(BlockNumber::from(block_number)).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                serde_json::to_string(&header).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-            },
-            TableName::Transactions => {
-                let tx_number = key.parse::<u64>().map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                let tx = self.get::<Transactions>(TxNumber::from(tx_number)).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                serde_json::to_string(&tx).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-            },
-            TableName::TxHashNumber => {
-                let tx_hash = key.parse::<H256>().map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                let tx_hash_number = self.get::<TxHashNumber>(TxHash::from(tx_hash)).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))?;
-                serde_json::to_string(&tx_hash_number).map_err(|err| exceptions::PyValueError::new_err(err.to_string()))
-            },
-        }
+    pub(crate) fn get_transactions_by_id_range(&self, start: u64, end: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let transactions = provider.transactions_by_tx_range(&start..&end)?;
+        let json = serde_json::to_string(&transactions)?;
+        Ok(json)
+    }
+
+    pub(crate) fn get_transactions_by_block_number_range(&self, start: u64, end: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let transactions = provider.transactions_by_block_range(&start..&end)?;
+        let json = serde_json::to_string(&transactions)?;
+        Ok(json)
+    }
+
+    pub(crate) fn get_block_by_number(&self, number: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let block = provider.block(number.into())?;
+        let json = serde_json::to_string(&block)?;
+        Ok(json)
+    }
+
+    pub(crate) fn get_uncles_by_block_number(&self, number: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let uncles = provider.ommers(number.into())?;
+        let json = serde_json::to_string(&uncles)?;
+        Ok(json)
+    }
+
+    pub(crate) fn get_receipts_by_transaction_id(&self, id: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let receipts = provider.receipt(id)?;
+        let json = serde_json::to_string(&receipts)?;
+        Ok(json)
+    }
+
+    pub(crate) fn get_receipts_by_block_number(&self, number: u64) -> eyre::Result<String> {
+        let provider = self.factory.provider()?;
+        let receipts = provider.receipts_by_block(number.into())?;
+        let json = serde_json::to_string(&receipts)?;
+        Ok(json)
     }
 }

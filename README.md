@@ -1,9 +1,9 @@
 # <h1 align="center">reth-db-py</h1>
 
-**Bare-bones Python package allowing you to interact with the Reth DB via Python. Written with Rust and Pyo3.**
+**Python package allowing you to interact with the Reth DB via Python. Written with Rust and Pyo3.**
 
-**This python wrapper can access node data 2x-4x faster than local RPC calls.  Using this package, the most recent
-block hash can be retrieved in ~300μs on a local reth DB.**
+**This python wrapper can access node data 15x-30x faster than local RPC calls.  Using this package, the most recent
+block hash can be retrieved in ~100μs on a local reth DB.**
 
 [![Test Suite](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml/badge.svg)](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml)
 [![Py Versions](https://img.shields.io/badge/python-3.7_|_3.8_|_3.9_|_3.10-blue.svg)](https://www.python.org/downloads/)
@@ -18,36 +18,45 @@ pip install reth-db-py
 
 
 # Assets
-This package only has two assets made available: `DbHandler` and `TableName`.  
+This package only has a single python class made available: `PyDatabaseHandler`.  
 
-`TableName` is an enum that contains the names of the supported tables in the Reth DB.  This is used to ensure that the table name you are trying to access is valid.
-
-```rust
-pub enum TableName {
-    CanonicalHeaders,
-    Headers,
-    Transactions,
-    TxHashNumber,
-}
-```
-
-`DbHandler` is a struct/class used to interact with the Reth DB.  It has two methods, `get` and `list`:
-* `get` - takes a `TableName` and a `key` and returns the value associated with that key in the table
-* `list` - takes a `TableName`, skip, length, and a `reverse` boolean and returns a list of keys and values from the table
+`PyDatabaseHandler` is a class used to interact with the Reth DB.  It's a wrapper around the Rust `DatabaseHandler` struct.
+It has a few methods which all return json strings:
+* `get_header_by_block_number`: get a single header by block number
+* `get_headers_by_block_number_range`: get multiple headers by block number range
+* `get_transaction_by_id`: get a single transaction by transaction id
+* `get_transactions_by_id_range`: get multiple transactions by transaction id range
+* `get_transactions_by_block_number_range`: get multiple transactions by block number range
+* `get_block_by_number`: get a single block by block number
+* `get_uncles_by_block_number`: get uncles by block number
+* `get_receipts_by_transaction_id`: get receipts by transaction id
+* `get_receipts_by_block_number`: get receipts by block number
 
 ```rust
-impl DbHandler {
-    pub fn new(db_path: String) -> Self {}
-    pub fn list(&self, table_name: TableName, skip: usize, len: usize, reverse: bool) -> PyResult<Vec<(String, String)>> {}
-    pub fn get(&self, table_name: TableName, key: String) -> PyResult<String> {}
+impl PyDatabaseHandler {
+    pub fn get_header_by_block_number(&self, number: u64) -> PyResult<String>
+    pub fn get_headers_by_block_number_range(&self, start: u64, end: u64) -> PyResult<String>
+    pub fn get_transaction_by_id(&self, id: u64) -> PyResult<String>
+    pub fn get_transactions_by_id_range(&self, start: u64, end: u64) -> PyResult<String>
+    pub fn get_transactions_by_block_number_range(&self, start: u64, end: u64) -> PyResult<String>
+    pub fn get_block_by_number(&self, number: u64) -> PyResult<String>
+    pub fn get_uncles_by_block_number(&self, number: u64) -> PyResult<String>
+    pub fn get_receipts_by_transaction_id(&self, id: u64) -> PyResult<String>
+    pub fn get_receipts_by_block_number(&self, number: u64) -> PyResult<String>
 }
 ```
 
 ```python
-class DbHandler:
-    def __init__(self, db_path: str)
-    def list(self, table_name: TableName, skip: int, len: int, reverse: bool)
-    def get(self, table_name: TableName, key: str)
+class PyDatabaseHandler:
+    def get_header_by_block_number(self, number: int) -> str
+    def get_headers_by_block_number_range(self, start: int, end: int) -> str
+    def get_transaction_by_id(self, id: int) -> str
+    def get_transactions_by_id_range(self, start: int, end: int) -> str
+    def get_transactions_by_block_number_range(self, start: int, end: int) -> str
+    def get_block_by_number(self, number: int) -> str
+    def get_uncles_by_block_number(self, number: int) -> str
+    def get_receipts_by_transaction_id(self, id: int) -> str
+    def get_receipts_by_block_number(self, number: int) -> str
 ```
 
 
@@ -56,38 +65,61 @@ class DbHandler:
 # Usage
 #### Import reth-db-py assets:
 ```python
-from reth_db_py import DbHandler, TableName
+from reth_db_py import PyDatabaseHandler
 ```
 
-#### Create a DbHandler instance:
+#### Create a PyDatabaseHandler instance:
 ```python
-handler = DbHandler("/path/to/db/mdbx.dat")
+handler = PyDatabaseHandler("/path/to/db/mdbx.dat")
 ```
 
-#### Get a single block hash from the `CanonicalHeaders` table:
+#### Get the header by block number
 ```python
-header_hash = handler.get(TableName.CanonicalHeaders, '17000000')
+header = handler.get_header_by_block_number(17_000_000)
 ```
 
-#### Get 5 most recent block hashes from the `CanonicalHeaders` table:
+#### Get the headers by block number range
 ```python
-header_list = handler.list(TableName.CanonicalHeaders, 0, 5, True)
+headers = handler.get_headers_by_block_number_range(17_000_000, 17_000_005)
 ```
 
+#### Get transaction by id
+```python
+transaction = handler.get_transaction_by_id(1000)
+```
 
+#### Get transactions by id range
+```python
+transactions = handler.get_transactions_by_id_range(1000, 1005)
+```
 
+#### Get transactions by block number range
+```python
+transactions = handler.get_transactions_by_block_number_range(17_000_000, 17_000_005)
+```
 
-# Table Docs
-Goal is to support all tables in Reth (currently only support 4 tables related to headers and transactions).  Reth is 
-still in alpha and the database tables are subject to change. Docs on the tables can be found in the reth repo 
-[here](https://github.com/paradigmxyz/reth/blob/main/docs/design/database.md).
+#### Get block by number
+```python
+block = handler.get_block_by_number(17_000_000)
+```
 
-* `CanonicalHeaders` - contains the block hash for each block number
-* `Headers` - contains the header for each block hash
-* `Transactions` - contains the transaction for each transaction hash
-* `TxHashNumber` - contains the block number for each transaction hash
+#### Get uncles by block number
+```python
+uncles = handler.get_uncles_by_block_number(17_000_000)
+```
 
+#### Get receipts by transaction id
+```python
+receipts = handler.get_receipts_by_transaction_id(1000)
+```
 
+#### Get receipts by block number
+```python
+receipts = handler.get_receipts_by_block_number(17_000_000)
+```
+
+# Tests
+Coming soon.
 
 
 # Benchmarks

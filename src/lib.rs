@@ -1,7 +1,7 @@
 mod types;
 mod utils;
 
-use crate::types::{DbHandler, TableName};
+use crate::types::{PyDatabaseHandler};
 use pyo3::prelude::*;
 
 
@@ -11,9 +11,6 @@ use pyo3::prelude::*;
 /// an interface to a database.
 #[pymodule]
 fn reth_db_py(_py: Python, m: &PyModule) -> PyResult<()> {
-    /// Handles database operations.
-    m.add_class::<DbHandler>()?;
-    /// Represents the name of a table in the database.
-    m.add_class::<TableName>()?;
+    m.add_class::<PyDatabaseHandler>()?;
     Ok(())
 }

@@ -4,7 +4,7 @@ build-backend = "maturin.sdist"
 
 [project]
 name = "reth-db-py"
-version = "0.1.3"
+version = "0.1.4"
 description = "Python wrapper around reth db. Written in Rust."
 readme = "README.md"
 license = "MIT"

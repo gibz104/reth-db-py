@@ -2,45 +2,106 @@ from enum import Enum
 from typing import List, Tuple
 
 
-class TableName(Enum):
-    """Table name used for database operations."""
-    CanonicalHeaders = 0
-    Headers = 1
-    Transactions = 2
-    TxHashNumber = 3
-
-
-class DbHandler:
+class PyDatabaseHandler:
     def __init__(self, db_path: str):
         """
-        Construct a new `DbHandler` object.
-       
+        Construct a new `PyDatabaseHandler` object.
+
         :param str db_path: The path to the database.
-        :return: A new `DbHandler` object.
-        :rtype: DbHandler
+        :return: A new `PyDatabaseHandler` object.
+        :rtype: PyDatabaseHandler
         """
         ...
 
-    def list(self, table_name: TableName, skip: int, len: int, reverse: bool) -> List[Tuple[str, str]]:
+    def get_header_by_block_number(self, number: int) -> str:
         """
-        List entries from a database table.
-       
-        :param TableName table_name: The name of the table.
-        :param int skip: The number of entries to skip.
-        :param int len: The number of entries to retrieve.
-        :param bool reverse: Whether to retrieve entries in reverse order.
-        :return: A list of tuples where each tuple represents an entry in the database table.
-        :rtype: list
+        Get header by block number.
+
+        :param int number: The block number.
+        :return: A JSON string representing the header of the block.
+        :rtype: str
         """
         ...
 
-    def get(self, table_name: TableName, key: str) -> str:
+    def get_headers_by_block_number_range(self, start: int, end: int) -> str:
         """
-        Fetch a value from a specific table in the database by key.
-       
-        :param TableName table_name: The name of the table.
-        :param str key: The key to look up in the table.
-        :return: A string representing the value associated with the key if found.
+        Get headers by block number range.
+
+        :param int start: The start block number of the range.
+        :param int end: The end block number of the range.
+        :return: A JSON string representing headers of blocks within the range.
+        :rtype: str
+        """
+        ...
+
+    def get_transaction_by_id(self, id: int) -> str:
+        """
+        Get transaction by ID.
+
+        :param int id: The transaction ID.
+        :return: A JSON string representing the transaction.
+        :rtype: str
+        """
+        ...
+
+    def get_transactions_by_id_range(self, start: int, end: int) -> str:
+        """
+        Get transactions by ID range.
+
+        :param int start: The start transaction ID of the range.
+        :param int end: The end transaction ID of the range.
+        :return: A JSON string representing transactions within the ID range.
+        :rtype: str
+        """
+        ...
+
+    def get_transactions_by_block_number_range(self, start: int, end: int) -> str:
+        """
+        Get transactions by block number range.
+
+        :param int start: The start block number of the range.
+        :param int end: The end block number of the range.
+        :return: A JSON string representing transactions within the block number range.
+        :rtype: str
+        """
+        ...
+
+    def get_block_by_number(self, number: int) -> str:
+        """
+        Get block by number.
+
+        :param int number: The block number.
+        :return: A JSON string representing the block.
+        :rtype: str
+        """
+        ...
+
+    def get_uncles_by_block_number(self, number: int) -> str:
+        """
+        Get uncles of a block by block number.
+
+        :param int number: The block number.
+        :return: A JSON string representing the uncles of the block.
+        :rtype: str
+        """
+        ...
+
+    def get_receipts_by_transaction_id(self, id: int) -> str:
+        """
+        Get receipts by transaction ID.
+
+        :param int id: The transaction ID.
+        :return: A JSON string representing the receipts of the transaction.
+        :rtype: str
+        """
+        ...
+
+    def get_receipts_by_block_number(self, number: int) -> str:
+        """
+        Get receipts by block number.
+
+        :param int number: The block number.
+        :return: A JSON string representing the receipts of transactions within the block.
         :rtype: str
         """
         ...
