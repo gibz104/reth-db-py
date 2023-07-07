@@ -2,8 +2,8 @@
 
 **Python package allowing you to interact with the Reth DB via Python. Written with Rust and Pyo3.**
 
-**This python wrapper can access node data 15x-30x faster than local RPC calls.  Using this package, the most recent
-block hash can be retrieved in ~100μs on a local reth DB.**
+**This python wrapper can access node data 3x-5x faster than local web3.py calls.  Using this package, a
+block can be retrieved in ~10ms on a local reth DB.**
 
 [![Test Suite](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml/badge.svg)](https://github.com/gibz104/reth-db-py/actions/workflows/CI.yml)
 [![Py Versions](https://img.shields.io/badge/python-3.7_|_3.8_|_3.9_|_3.10-blue.svg)](https://www.python.org/downloads/)
@@ -123,4 +123,12 @@ Coming soon.
 
 
 # Benchmarks
-Speed tests between RPC calls vs. reth-db-py calls (direct db interaction) coming soon.
+Speed tests were conducted by retrieving 1,000 block bodies (including transactions)
+using: 
+* reth-db-py (local reth db)
+* web3.py (local reth JSON RPC)
+* http requests (remote alchemy API)
+
+See benchmark tests [here](examples/benchmarks.py).
+
+![benchmarks](examples/assets/benchmarks.png)
