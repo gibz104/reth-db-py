@@ -1,10 +1,9 @@
-use reth_db::open_db_read_only;
+use reth_db::{open_db_read_only, DatabaseEnvRO};
 use reth_primitives::ChainSpecBuilder;
 use reth_provider::{BlockReader, HeaderProvider, ProviderFactory, ReceiptProvider, TransactionsProvider};
 
 use std::path::Path;
 use std::sync::Arc;
-use reth_db::DatabaseEnvRO;
 
 pub struct DatabaseHandler {
     factory: ProviderFactory<DatabaseEnvRO>,
